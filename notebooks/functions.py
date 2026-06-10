@@ -67,3 +67,48 @@ class DoomDataset(Dataset):
         x = torch.tensor(chunk[:-1], dtype=torch.long)
         y = torch.tensor(chunk[1:], dtype=torch.long)
         return x, y
+
+
+
+
+def events_to_midi(events, steps_per_beat, bpm=95):
+    sec_per_step = (60.0 / bpm) / steps_per_beat
+    midi      = pretty_midi.PrettyMIDI()
+    insts     = {}     # program -> Instrument (melodyczne)
+    drum_inst = None   # jeden wspólny kanał perkusji
+    active    = {}     # pitch -> [(start_step, program)]
+    cur, last_prog = 0, 0
+
+    for ev in events:
+        if ev in ('BOS', 'EOS', 'PAD'):
+            continue
+        if ev.startswith('SHIFT_'):
+            cur += int(ev.split('_')[1])
+        elif ev.startswith('PROGRAM_'):
+            last_prog = int(ev.split('_')[1])
+        elif ev.startswith('NOTE_ON_'):
+            pitch = int(ev.split('_')[-1])
+            active.setdefault(pitch, []).append((cur, last_prog))
+        elif ev.startswith('NOTE_OFF_'):
+            pitch = int(ev.split('_')[-1])
+            if active.get(pitch):
+                start_step, prog = active[pitch].pop(0)
+                start = start_step * sec_per_step
+                end   = cur * sec_per_step
+                if end > start:
+                    if prog not in insts:
+                        insts[prog] = pretty_midi.Instrument(program=prog)
+                    insts[prog].notes.append(pretty_midi.Note(100, pitch, start, end))
+        elif ev.startswith('DRUM_'):
+            pitch = int(ev.split('_')[1])
+            start = cur * sec_per_step
+            end   = start + sec_per_step
+            if drum_inst is None:
+                drum_inst = pretty_midi.Instrument(program=0, is_drum=True)
+            drum_inst.notes.append(pretty_midi.Note(100, pitch, start, end))
+
+    for inst in insts.values():
+        midi.instruments.append(inst)
+    if drum_inst is not None:
+        midi.instruments.append(drum_inst)
+    return midi
