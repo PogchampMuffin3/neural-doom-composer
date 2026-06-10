@@ -55,6 +55,8 @@ class DoomDataset(Dataset):
         pitches = [id2pitch[i] for i in chunk if i in id2pitch]
         if not pitches:
             return list(SHIFT_MAPS.keys())
+        lo, hi = min(pitches), max(pitches)
+        return [off for off in SHIFT_MAPS if 0 <= lo + off and hi + off <= 127]
 
     def __getitem__(self, idx):
         si, start = self.index[idx]
@@ -63,7 +65,7 @@ class DoomDataset(Dataset):
             allowed = self._allowed_offsets(chunk)
             off = random.choice(allowed)
             if off != 0:
-                chunk = SHIGF_MAPS[off][chunk]
+                chunk = SHIFT_MAPS[off][np.array(chunk, dtype=int64)]
                 
         x = torch.tensor(chunk[:-1], dtype=torch.long)
         y = torch.tensor(chunk[1:], dtype=torch.long)
