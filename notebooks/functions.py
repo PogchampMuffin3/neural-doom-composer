@@ -5,9 +5,6 @@ import numpy as np
 import random
 import torch
 
-
-CONTEXT = 512
-STRIDE  = 256
 PROC_DIR = '../data/processed/'
 
 with open(os.path.join(PROC_DIR, 'vocab.json')) as f:
@@ -23,7 +20,7 @@ noteon_ids = { int(tok.split('_')[-1]): i for tok, i in token2id.items() if tok.
 noteoff_ids = { int(tok.split('_')[-1]): i for tok, i in token2id.items() if tok.startswith('NOTE_OFF') }
 
 class DoomDataset(Dataset):
-    def __init__(self, sequences, context=CONTEXT, stride=STRIDE, augment=True, max_transpose=6):
+    def __init__(self, sequences, context, stride, augment, max_transpose):
         self.context=context
         self.augment=augment
         self.seqs=sequences
