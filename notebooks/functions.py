@@ -65,7 +65,7 @@ class DoomDataset(Dataset):
             allowed = self._allowed_offsets(chunk)
             off = random.choice(allowed)
             if off != 0:
-                chunk = SHIFT_MAPS[off][np.array(chunk, dtype=int64)]
+                chunk = SHIFT_MAPS[off][np.array(chunk, dtype=np.int64)]
                 
         x = torch.tensor(chunk[:-1], dtype=torch.long)
         y = torch.tensor(chunk[1:], dtype=torch.long)
